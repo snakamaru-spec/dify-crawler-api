@@ -8,7 +8,6 @@ from urllib.parse import urlparse, urljoin
 class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
-        # Vercelの環境変数からAPIキーを読み込む
         API_KEY = os.getenv('SCRAPINGBEE_API_KEY')
         
         content_length = int(self.headers['Content-Length'])
@@ -33,9 +32,9 @@ class handler(BaseHTTPRequestHandler):
                     'api_key': API_KEY,
                     'url': target_url, 
                     'render_js': 'true', # JavaScriptを有効にする
-                    'wait_for': '#footer', # ページのフッターが表示されるまで待つ
+                    # '#footer'を待つ設定を削除
                 },
-                timeout=120 # タイムアウトを120秒に延長
+                timeout=120
             )
 
             if response.status_code >= 400:
@@ -54,26 +53,21 @@ class handler(BaseHTTPRequestHandler):
             urls = set()
             base_domain = urlparse(target_url).netloc
             
-            # ページ内の全てのリンクを収集
             for link in soup.find_all('a', href=True):
                 href = link['href']
                 absolute_url = urljoin(target_url, href)
                 parsed_url = urlparse(absolute_url)
-
-                # 同じドメインのURLのみを対象とする
                 if parsed_url.netloc == base_domain:
                     clean_url = absolute_url.split('#')[0].split('?')[0]
                     urls.add(clean_url)
             
-            # トップページ自体もカウントに含める
             urls.add(target_url.split('#')[0].split('?')[0])
-            
             page_count = len(urls)
 
             result = {
                 "page_count": page_count,
                 "image_count": image_count,
-                "pages_found": list(urls) # 発見したページのリストも返す
+                "pages_found": list(urls)
             }
             self._send_response(result)
 
